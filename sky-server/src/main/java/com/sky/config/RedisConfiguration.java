@@ -18,7 +18,7 @@ public class RedisConfiguration {
         // 设置redis key的序列化器
         redisTemplate.setKeySerializer(new StringRedisSerializer());
 
-        // 设置redis value的序列化器 注释掉不需要帮我序列化，不然它会强转
+        // 设置redis value的序列化器 使用默认的 JDK 序列化，不然它会强转
 //        redisTemplate.setValueSerializer(new StringRedisSerializer());
         return redisTemplate;
     }
