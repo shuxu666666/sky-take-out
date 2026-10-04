@@ -172,4 +172,18 @@ public class OrderServiceImpl implements OrderService {
         long total = page == null ? 0 : page.getTotal();
         return new PageResult(total, orderVOList);
     }
+
+    @Override
+    public OrderVO orderDetail(Long id) {
+        Orders orders = orderMapper.getByIdAndUserId(id, BaseContext.getCurrentId());
+        OrderVO orderVO = new OrderVO();
+        if (orders != null) {
+            BeanUtils.copyProperties(orders, orderVO);
+            orderVO.setOrderDetailList(orderDetailMapper.getByOrderId(orders.getId()));
+        } else {
+            throw new OrderBusinessException("订单不存在");
+        }
+
+        return orderVO;
+    }
 }
