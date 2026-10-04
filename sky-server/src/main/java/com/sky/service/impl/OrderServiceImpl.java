@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -45,6 +46,7 @@ public class OrderServiceImpl implements OrderService {
     private UserMapper userMapper;
     @Autowired
     private WeChatPayUtil weChatPayUtil;
+
 
     /**
      * 用户下单
@@ -185,5 +187,56 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return orderVO;
+    }
+
+    @Override
+    public void cancel(Long id) throws Exception {
+        Orders orderInfo = orderMapper.getByIdAndUserId(id, BaseContext.getCurrentId());
+        // 校验订单是否存在
+        if (orderInfo == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        Integer status = orderInfo.getStatus();
+        if (status > 2) {
+            throw new OrderBusinessException("需电话沟通商家");
+        }
+
+        Orders updateOrders = Orders.builder().id(orderInfo.getId()).status(Orders.CANCELLED).build();
+
+        // 订单处于待接单状态下取消，需要进行退款
+//        这个在就会报错，真实场景需要退款
+//        if (status.equals(Orders.TO_BE_CONFIRMED)) {
+//            //调用微信支付退款接口
+//            weChatPayUtil.refund(
+//                    orderInfo.getNumber(), //商户订单号
+//                    orderInfo.getNumber(), //商户退款单号
+//                    new BigDecimal(0.01),//退款金额，单位 元
+//                    new BigDecimal(0.01));//原订单金额
+//
+//            //支付状态修改为 退款
+//        }
+        updateOrders.setPayStatus(Orders.REFUND);
+        // 更新订单状态、取消原因、取消时间
+        updateOrders.setCancelReason("用户取消");
+        updateOrders.setCancelTime(LocalDateTime.now());
+        orderMapper.update(updateOrders);
+
+    }
+
+    @Override
+    public void repetition(Long id) {
+        List<OrderDetail> orderDetailList = orderDetailMapper.getByOrderId(id);
+        List<ShoppingCart> shoppingCartList = new ArrayList<>();
+
+        for (OrderDetail orderDetail : orderDetailList) {
+            ShoppingCart shoppingCart = new ShoppingCart();
+            BeanUtils.copyProperties(orderDetail, shoppingCart, "id");
+            shoppingCart.setCreateTime(LocalDateTime.now());
+            shoppingCart.setUserId(BaseContext.getCurrentId());
+            shoppingCartList.add(shoppingCart);
+        }
+
+        shoppingCartMapper.insertBatch(shoppingCartList);
+
     }
 }
