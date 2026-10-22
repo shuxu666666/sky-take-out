@@ -1,6 +1,7 @@
 package com.sky.mapper;
 
 import com.github.pagehelper.Page;
+import com.sky.dto.GoodsSalesDTO;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.entity.Orders;
 import org.apache.ibatis.annotations.Mapper;
@@ -37,7 +38,7 @@ public interface OrderMapper {
     Orders getById(Long id);
 
     @Select("select * from orders where id =#{id} and user_id = #{userId}")
-    Orders getByIdAndUserId(@Param("id") Long id,@Param("userId") Long userId);
+    Orders getByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 
     /**
      * 修改订单信息
@@ -60,6 +61,7 @@ public interface OrderMapper {
 
     /**
      * 根据状态统计订单数量
+     *
      * @param status
      */
     @Select("select count(id) from orders where status = #{status}")
@@ -77,4 +79,13 @@ public interface OrderMapper {
      * @return
      */
     Integer countByMap(Map<String, Object> map);
+
+    /**
+     * 统计指定时间区间内的销量排名前10
+     *
+     * @param begin
+     * @param end
+     * @return
+     */
+    List<GoodsSalesDTO> getSalesTop10(LocalDateTime begin, LocalDateTime end);
 }
